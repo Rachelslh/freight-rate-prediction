@@ -1,0 +1,10 @@
+path: data/train-test.csv
+N_TRIALS: 50
+RANDOM_SEED: 42
+VAL_FRACTION: 0.15  
+
+n_estimators: 3000
+early_stopping_rounds: 50
+
+params_out_file: params.json
+model_out_file: xgb_final.json
