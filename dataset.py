@@ -5,23 +5,42 @@ from sklearn.metrics.pairwise import haversine_distances
 
 
 class Dataset:
-    def __init__(self, config):
-        self.dataset_path = config.path
+    def __init__(self, config, inference : bool=False):
+        self.inference=inference
         self.val_rate = config.VAL_FRACTION
         self.cfg = config
-
-        self.split()
-        self.frequency_features = None
-        self.train_df = self.build_features(self.train_df)
-        self.val_df = self.build_features(self.val_df)
-                
-        self.x = self.train_df.drop(columns=["posted_rate"])
-        self.y = self.train_df["posted_rate"]
-        self.y_log = np.log1p(self.y)
         
-        self.x_val = self.val_df.drop(columns=["posted_rate"])
-        self.y_val = self.val_df["posted_rate"]
-        self.y_val_log = np.log1p(self.y_val)
+        self.frequency_features = None
+        self.weight_median = None
+        self.market_index_median = None
+        
+        if not self.inference:    
+            train_df, val_df = self.load_and_split()
+            train_df = self.build_features(train_df)
+            val_df = self.build_features(val_df)
+            
+            self.x = train_df.drop(columns=["posted_rate"])
+            self.y = train_df["posted_rate"]
+            self.y_log = np.log1p(self.y)
+                    
+            self.x_val = val_df.drop(columns=["posted_rate"])
+            self.y_val = val_df["posted_rate"]
+            self.y_val_log = np.log1p(self.y_val)
+            
+            self.save_artifacts()
+            
+        else:
+            with open(self.cfg.model_artifacts, "rb") as f:
+                model_features = pickle.load(f)
+                
+            self.frequency_features = model_features["freq_maps"]
+            self.weight_median = model_features["impute_values"]["weight_median"]
+            self.market_index_median = model_features["impute_values"]["market_index_median"]
+
+            df, _ = self.load_and_split()
+            df = self.build_features(df)
+            self.x = df
+        
         
     def build_features(self, df: pd.DataFrame) -> pd.DataFrame:
         
@@ -43,10 +62,12 @@ class Dataset:
         df["weight_missing"] = df["weight"].isna().astype(int)
         df["market_index_missing"] = df["market_index"].isna().astype(int)
         
-        self.weight_median = df["weight"].median()
+        if self.weight_median is None:
+            self.weight_median = df["weight"].median()
         df["weight"] = df["weight"].fillna(self.weight_median)
         
-        self.market_index_median = df["market_index"].median()
+        if self.market_index_median is None:
+            self.market_index_median = df["market_index"].median()
         df["market_index"] = df["market_index"].fillna(self.market_index_median)
 
         df["route"] = df["pickup"] + "__" + df["delivery"]
@@ -66,15 +87,22 @@ class Dataset:
         new_df = df.drop(columns=["load_id", "pickup", "delivery", "route", "date"])
         return new_df
 
-    def split(self) -> pd.DataFrame:
-        df = pd.read_csv(self.dataset_path)
+    def load_and_split(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        df = pd.read_csv(self.cfg.training_data if not self.inference else self.cfg.validation_data)
         
         df = df.sort_values("date").reset_index(drop=True)
+
+        if self.inference:
+            return df, None
+        
         split_idx = int(len(df) * (1 - self.val_rate))
         cutoff_date = df.iloc[split_idx]["date"]
-        self.train_df = df[df["date"] < cutoff_date]
-        self.val_df = df[df["date"] >= cutoff_date]
-            
+        train_df = df[df["date"] < cutoff_date]
+        val_df = df[df["date"] >= cutoff_date]
+        
+        return train_df, val_df
+    
+    
     def save_artifacts(self, ):
         data_to_save = {
             "freq_maps": self.frequency_features,
@@ -84,5 +112,5 @@ class Dataset:
             }
         }
 
-        with open("model_artifacts.pkl", "wb") as f:
+        with open(self.cfg.model_artifacts, "wb") as f:
             pickle.dump(data_to_save, f)

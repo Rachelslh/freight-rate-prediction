@@ -1,6 +1,7 @@
 import xgboost as xgb
 import numpy as np
 from omegaconf import OmegaConf
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
 
 from dataset import Dataset
 from optimize import Optimizer
@@ -28,8 +29,6 @@ model.fit(dataset.x, dataset.y_log, eval_set=[(dataset.x_val, dataset.y_val_log)
 
 preds_log = model.predict(dataset.x_val)
 preds = np.expm1(preds_log)
-
-from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
 
 print(f"log-RMSE : {mean_squared_error(dataset.y_val_log, preds_log) ** 0.5:.5f}")
 print(f"MAPE     : {mean_absolute_percentage_error(dataset.y_val, preds) * 100:.2f}%")
