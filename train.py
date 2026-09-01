@@ -1,4 +1,5 @@
 import xgboost as xgb
+import pandas as pd
 import numpy as np
 from omegaconf import OmegaConf
 from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
@@ -26,6 +27,13 @@ params.update({
 model = xgb.XGBRegressor(**params)
 
 model.fit(dataset.x, dataset.y_log, eval_set=[(dataset.x_val, dataset.y_val_log)], verbose=100)
+
+importance_df = pd.DataFrame({
+    'Feature': model.feature_names_in_,
+    'Importance': model.feature_importances_
+}).sort_values(by='Importance', ascending=False)
+
+print(importance_df)
 
 preds_log = model.predict(dataset.x_val)
 preds = np.expm1(preds_log)
