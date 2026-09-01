@@ -14,12 +14,11 @@ dataset = Dataset(cfg, inference=True)
 model = xgb.XGBRegressor()
 model.load_model("xgb_final.json")
 
-
 preds_log = model.predict(dataset.x)
 preds = np.expm1(preds_log)
 
-df = pd.read_csv(cfg.validation_template)
-df['predicted_rate'] = preds
+dataset.orig_df['predicted_rate'] = preds
+output = dataset.orig_df[['load_id', 'predicted_rate']]
 
-df.to_csv(cfg.validation_out, index=False)
+output.to_csv(cfg.validation_out, index=False)
         

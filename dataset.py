@@ -38,6 +38,7 @@ class Dataset:
             self.market_index_median = model_features["impute_values"]["market_index_median"]
 
             df, _ = self.load_and_split()
+            self.orig_df = df
             df = self.build_features(df)
             self.x = df
         
