@@ -1,4 +1,7 @@
-path: data/train-test.csv
+training_data: data/train-test.csv
+validation_data: data/validation.csv
+validation_template: data/validation-predictions-template.csv
+
 N_TRIALS: 50
 RANDOM_SEED: 42
 VAL_FRACTION: 0.15  
@@ -8,3 +11,5 @@ early_stopping_rounds: 50
 
 params_out_file: params.json
 model_out_file: xgb_final.json
+model_artifacts: model_artifacts.pkl
+validation_out: validation_predictions.csv
