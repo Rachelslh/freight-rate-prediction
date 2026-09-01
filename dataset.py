@@ -5,8 +5,8 @@ from sklearn.metrics.pairwise import haversine_distances
 
 
 class Dataset:
-    def __init__(self, config, inference : bool=False):
-        self.inference=inference
+    def __init__(self, config, data_path: str, inference : bool=False):
+        self.inference= inference
         self.val_rate = config.VAL_FRACTION
         self.cfg = config
         
@@ -15,7 +15,7 @@ class Dataset:
         self.market_index_median = None
         
         if not self.inference:    
-            train_df, val_df = self.load_and_split()
+            train_df, val_df = self.load_and_split(data_path)
             train_df = self.build_features(train_df)
             val_df = self.build_features(val_df)
             
@@ -37,7 +37,7 @@ class Dataset:
             self.weight_median = model_features["impute_values"]["weight_median"]
             self.market_index_median = model_features["impute_values"]["market_index_median"]
 
-            df, _ = self.load_and_split()
+            df, _ = self.load_and_split(data_path)
             self.orig_df = df
             df = self.build_features(df)
             self.x = df
@@ -88,8 +88,8 @@ class Dataset:
         new_df = df.drop(columns=["load_id", "pickup", "delivery", "route", "date"])
         return new_df
 
-    def load_and_split(self) -> tuple[pd.DataFrame, pd.DataFrame]:
-        df = pd.read_csv(self.cfg.training_data if not self.inference else self.cfg.validation_data)
+    def load_and_split(self, path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+        df = pd.read_csv(path)
         
         df = df.sort_values("date").reset_index(drop=True)
 

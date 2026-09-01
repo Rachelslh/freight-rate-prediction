@@ -10,7 +10,7 @@ from optimize import Optimizer
 
 cfg = OmegaConf.load("config.yaml")
 
-dataset = Dataset(cfg)
+dataset = Dataset(cfg, cfg.training_data)
 optimizer = Optimizer(cfg)
     
 best_params = optimizer(dataset.x, dataset.y_log, dataset.x_val, dataset.y_val_log)
